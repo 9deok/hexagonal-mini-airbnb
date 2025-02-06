@@ -1,6 +1,8 @@
 package _deok.mini_airbnb.user.adapter.out.persistence;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,6 +31,7 @@ class UserEntity {
 
     private LocalDateTime modifiedDate;
 
+    @Enumerated(EnumType.STRING)
     private UserRole userRole;
 
 }

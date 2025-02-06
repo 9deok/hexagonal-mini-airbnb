@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -27,12 +29,17 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(AbstractHttpConfigurer::disable)
+        return http
+            .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-            .addFilterAfter(jwtAuthorizationFilter(), BasicAuthenticationFilter.class)
-
-                .build();
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/login", "/h2-console/**").permitAll() // H2 콘솔 허용
+                .anyRequest().authenticated()
+            )
+            .headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions.disable()) // X-Frame-Options 헤더 비활성화
+            )
+            .build();
 
 //        http
 //            .authorizeRequests(authorizeRequests ->
@@ -46,7 +53,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));      // 허용할 오리진
+        configuration.setAllowedOriginPatterns(List.of("*"));      // 허용할 오리진
         configuration.setAllowedMethods(List.of("*"));      // 허용할 HTTP 메서드
         configuration.setAllowedHeaders(List.of("*"));      // 모든 헤더 허용
         configuration.setAllowCredentials(true);                // 인증 정보 허용
@@ -60,5 +67,10 @@ public class WebSecurityConfig {
     @Bean
     public JwtAuthorizationFilter jwtAuthorizationFilter() {
         return new JwtAuthorizationFilter();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 }

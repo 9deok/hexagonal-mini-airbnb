@@ -6,13 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
 @Slf4j
 @Component
@@ -24,9 +25,20 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
+        HttpServletRequest wrappedRequest = request;
+        if (!(request instanceof ContentCachingRequestWrapper)) {
+            wrappedRequest = new ContentCachingRequestWrapper(request);
+        }
+
         UsernamePasswordAuthenticationToken authRequest;
+        log.info("1.CustomAuthenticationFilter :: attemptAuthentication");
+        System.out.println("******************************");
+        log.info(request.toString());
+        System.out.println("request = " + request);
+        System.out.println("******************************");
+
         try {
-            authRequest = getAuthRequest(request);
+            authRequest = getAuthRequest(wrappedRequest);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -46,6 +58,4 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
             throw new UsernameNotFoundException(ae.getMessage());
         }
     }
-
-
 }

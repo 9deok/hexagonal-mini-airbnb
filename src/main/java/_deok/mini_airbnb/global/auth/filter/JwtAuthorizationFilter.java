@@ -24,7 +24,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     private static final String HTTP_METHOD_OPTIONS = "OPTIONS";
-    private static final List<String> PUBLIC_URLS = List.of("/login");
+    private static final List<String> PUBLIC_URLS = List.of("/login", "/h2-console","/h2-console/");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
@@ -49,7 +49,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicUrl(HttpServletRequest request) {
-        return PUBLIC_URLS.contains(request.getRequestURI());
+        String uri = request.getRequestURI();
+        return PUBLIC_URLS.stream().anyMatch(uri::startsWith);
     }
 
     private boolean isOptionsRequest(HttpServletRequest request) {
