@@ -1,5 +1,6 @@
 package _deok.mini_airbnb.global.auth.utils;
 
+import _deok.mini_airbnb.user.domain.User;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import lombok.Getter;
@@ -9,13 +10,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Getter
 public class UserDetailDto implements UserDetails {
 
-    private final UserDto userDto;
+    private final User userDto;
+    private final Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailDto(UserDto userDto) {
+    public UserDetailDto(User userDto, Collection<? extends GrantedAuthority> authorities) {
+        this.authorities = authorities;
         this.userDto = userDto;
     }
-
-    private Collection<? extends GrantedAuthority> authorities;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

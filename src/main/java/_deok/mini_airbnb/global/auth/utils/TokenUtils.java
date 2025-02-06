@@ -1,5 +1,6 @@
 package _deok.mini_airbnb.global.auth.utils;
 
+import _deok.mini_airbnb.user.domain.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -20,16 +21,16 @@ import org.springframework.stereotype.Component;
 public class TokenUtils {
 
     @Value("${jwt.sercret.key}")
-    private SecretKey JWT_SECRET_KEY;
+    private static SecretKey JWT_SECRET_KEY;
 
-    private Date createExpoireDate() {
+    private static Date createExpoireDate() {
         LocalDateTime expireDate = LocalDateTime.now().plusHours(1);
         Instant instant = expireDate.atZone(ZoneId.systemDefault()).toInstant();
 
         return Date.from(instant);
     }
 
-    private Map<String, Object> createHeader() {
+    private static Map<String, Object> createHeader() {
         return Jwts.header()
             .add("typ", "JWT")
             .add("alg", "HS256")
@@ -37,7 +38,7 @@ public class TokenUtils {
             .build();
     }
 
-    private Map<String, Object> createClaims(UserDto userDto) {
+    private static Map<String, Object> createClaims(User userDto) {
         return Map.of(
             "userId", userDto.getId(),
             "email", userDto.getEmail(),
@@ -45,7 +46,7 @@ public class TokenUtils {
         );
     }
 
-    public boolean isValidToken(String token) {
+    public static boolean isValidToken(String token) {
         try {
             Claims claims = getTokenToClaims(token);
             return true;
@@ -68,7 +69,7 @@ public class TokenUtils {
         }
     }
 
-    private Claims getTokenToClaims(String token) {
+    private static Claims getTokenToClaims(String token) {
         return Jwts.parser()
             .verifyWith(JWT_SECRET_KEY)
             .build()
@@ -76,7 +77,7 @@ public class TokenUtils {
             .getPayload();
     }
 
-    public String generateJwt(UserDto userDto) {
+    public static String generateJwt(User userDto) {
         return Jwts.builder()
             .setHeader(createHeader())
             .setClaims(createClaims(userDto))
@@ -85,13 +86,13 @@ public class TokenUtils {
             .compact();
     }
 
-    private Date createrefreshTokenExpireDate() {
+    private static Date createrefreshTokenExpireDate() {
         LocalDate tokenExpireDate = LocalDate.now().plusDays(14);
         Instant instant = tokenExpireDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
         return Date.from(instant);
     }
 
-    public String generateRefreshToken(UserDto userDto) {
+    public static String generateRefreshToken(User userDto) {
         log.info("generateRefreshToken");
         return Jwts.builder()
             .setHeader(createHeader())
@@ -101,11 +102,11 @@ public class TokenUtils {
             .compact();
     }
 
-    public String getHeaderToToken(String header) {
+    public static String getHeaderToToken(String header) {
         return header.replace("Bearer ", "");
     }
 
-    public String getClaimsToUserId(String token) {
+    public static String getClaimsToUserId(String token) {
         Claims claims = getTokenToClaims(token);
         return claims.get("userId", String.class);
     }

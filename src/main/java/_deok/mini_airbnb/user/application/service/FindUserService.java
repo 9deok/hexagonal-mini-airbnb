@@ -1,5 +1,16 @@
 package _deok.mini_airbnb.user.application.service;
 
-class FindUserService {
+import _deok.mini_airbnb.global.auth.utils.UserDto;
+import _deok.mini_airbnb.user.application.port.in.UserLoginUserCase;
+import _deok.mini_airbnb.user.domain.User;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
 
+@Service
+class FindUserService implements UserLoginUserCase {
+
+    @Override
+    public Optional<User> login(UserDto userDto) {
+        return null;
+    }
 }
