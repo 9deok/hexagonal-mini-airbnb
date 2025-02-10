@@ -1,11 +1,11 @@
 package _deok.mini_airbnb.global.auth.filter;
 
-import _deok.mini_airbnb.global.auth.utils.JwtErrorResponse;
-import _deok.mini_airbnb.global.auth.utils.TokenUtils;
+import _deok.mini_airbnb.global.auth.token.TokenGenerator;
+import _deok.mini_airbnb.global.auth.token.TokenUtils;
+import _deok.mini_airbnb.global.auth.token.TokenValidateDto;
+import _deok.mini_airbnb.global.auth.token.TokenValidator;
+import _deok.mini_airbnb.user.domain.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
-import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +16,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -24,8 +27,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     private static final String HTTP_METHOD_OPTIONS = "OPTIONS";
-    private static final List<String> PUBLIC_URLS = List.of("/login", "/h2-console","/h2-console/");
+    private static final List<String> PUBLIC_URLS = List.of("/login", "/h2-console","/h2-console/**", "/sign-up");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private final TokenUtils tokenUtils;
+    private final TokenValidator tokenValidator;
+    private final TokenGenerator tokenGenerator;
+
+    public JwtAuthorizationFilter(TokenUtils tokenUtils, TokenValidator tokenValidator,
+        TokenGenerator tokenGenerator) {
+        this.tokenUtils = tokenUtils;
+        this.tokenValidator = tokenValidator;
+        this.tokenGenerator = tokenGenerator;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -37,10 +50,32 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         }
 
         try {
-            String token = extractToken(request);
-            validateToken(token);
-            // 토큰 유효하면, 인증/권한 관련 추가 처리가 있을 수 있음 (SecurityContext 설정 등)
-            filterChain.doFilter(request, response);
+            String accessToken = tokenUtils.extractToken(request,"Authorization");
+            String refreshToken = tokenUtils.extractToken(request,"x-refresh-token");
+            TokenValidateDto accessTokenValidateDto = tokenValidator.isValidToken(accessToken);
+            if(accessTokenValidateDto.isValid()) {
+                Long userId = tokenUtils.getUserIdOfToken(accessToken);
+                Authentication auth = new UsernamePasswordAuthenticationToken(userId, null, List.of());
+                SecurityContextHolder.getContext().setAuthentication(auth);
+                filterChain.doFilter(request, response);
+            } else {
+                if(accessTokenValidateDto.getErrorMessage().equals("TOKEN_EXPIRED")) {
+                    TokenValidateDto refreshTokenValidateDto = tokenValidator.isValidToken(refreshToken);
+                    if(refreshTokenValidateDto.isValid()) {
+                        User user = tokenUtils.getUserOfToken(refreshToken, false);
+                        String newAccessToken = tokenGenerator.generateToken(user);
+                        sendAccessTokenToClient(newAccessToken, response);
+                        Long userId = tokenUtils.getUserIdOfToken(refreshToken);
+                        Authentication auth = new UsernamePasswordAuthenticationToken(userId, null, List.of());
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                        filterChain.doFilter(request, response);
+                    } else {
+                        throw new Exception("토큰이 유효하지 않습니다.");
+                    }
+                } else {
+                    throw new Exception("토큰이 유효하지 않습니다.");
+                }
+            }
         } catch (Exception e) {
             log.error("토큰 검증 실패", e);
             sendErrorResponse(response, e);
@@ -57,53 +92,33 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         return HTTP_METHOD_OPTIONS.equalsIgnoreCase(request.getMethod());
     }
 
-    private String extractToken(HttpServletRequest request) throws Exception {
-        String header = request.getHeader("Authorization");
-        if (StringUtils.isBlank(header)) {
-            throw new Exception("토큰이 없습니다.");
-        }
-
-        return TokenUtils.getHeaderToToken(header);
-    }
-
-    private void validateToken(String token) throws Exception {
-        if (!TokenUtils.isValidToken(token)) {
-            throw new Exception("토큰이 유효하지 않습니다.");
-        }
-        String userId = TokenUtils.getClaimsToUserId(token);
-        if (StringUtils.isBlank(userId)) {
-            throw new Exception("토큰 내 사용자 아이디가 없습니다.");
-        }
-    }
-
     private void sendErrorResponse(HttpServletResponse response, Exception e) {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         try (PrintWriter out = response.getWriter()) {
-            String jsonResponse = jwtTokenError(e);
-            out.println(jsonResponse);
+            String errorResponse = tokenUtils.createJwtTokenErrorResponse(e);
+            out.println(errorResponse);
             out.flush();
         } catch (IOException ioException) {
             log.error("에러 응답 전송 실패", ioException);
         }
     }
 
-    private String jwtTokenError(Exception e) {
-        String resultMessage = switch (e) {
-            case ExpiredJwtException ignored -> "토큰이 만료되었습니다.";
-            case JwtException ignored -> "토큰이 유효하지 않습니다.";
-            default -> "토큰 검증 오류";
-        };
-
-        JwtErrorResponse errorResponse
-            = new JwtErrorResponse(403, "JWT-403", resultMessage, e.getMessage());
-
+    private void sendAccessTokenToClient(String accessToken, HttpServletResponse response) {
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("status", 401);
+        responseBody.put("message", null);
+        responseBody.put("accessToken", accessToken);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         try {
-            return OBJECT_MAPPER.writeValueAsString(errorResponse);
-        } catch (Exception ex) {
-            log.error("JSON 변환 오류", ex);
-            return "{}";
+            PrintWriter printWriter = response.getWriter();
+            printWriter.write(OBJECT_MAPPER.writeValueAsString(responseBody));
+            printWriter.flush();
+            printWriter.close();
+        } catch (IOException e) {
+            log.error("access Token 결과값 생성 실패 ", e);
         }
     }
 }

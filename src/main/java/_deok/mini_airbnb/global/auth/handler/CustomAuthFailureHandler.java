@@ -30,7 +30,7 @@ public class CustomAuthFailureHandler implements AuthenticationFailureHandler {
 
         String failMsg = "";
 
-        // [STEP2] 발생한 Exception 에 대해서 확인합니다.
+        // 발생한 Exception 에 대해서 확인합니다.
         if (exception instanceof AuthenticationServiceException ||
             exception instanceof BadCredentialsException ||
             exception instanceof LockedException ||
@@ -40,11 +40,11 @@ public class CustomAuthFailureHandler implements AuthenticationFailureHandler {
             failMsg = "로그인 정보가 일치하지 않습니다.";
         }
 
-        // [STEP3] 응답 값을 구성하고 전달합니다.
+        // 응답 값을 구성하고 전달합니다.
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json");
 
-        log.debug(failMsg);
+        log.info(failMsg);
 
         Map<String, Object> resultMap = new HashMap<>();
         resultMap.put("userInfo", null);

@@ -14,8 +14,8 @@ public class UserDetailDto implements UserDetails {
     private final Collection<? extends GrantedAuthority> authorities;
 
     public UserDetailDto(User userDto, Collection<? extends GrantedAuthority> authorities) {
-        this.authorities = authorities;
         this.userDto = userDto;
+        this.authorities = authorities;
     }
 
     @Override
@@ -25,12 +25,12 @@ public class UserDetailDto implements UserDetails {
 
     @Override
     public String getPassword() {
-        return "";
+        return userDto.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return "";
+        return userDto.getUserName();
     }
 
     @Override

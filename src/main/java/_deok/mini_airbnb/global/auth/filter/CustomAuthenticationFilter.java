@@ -32,10 +32,6 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
 
         UsernamePasswordAuthenticationToken authRequest;
         log.info("1.CustomAuthenticationFilter :: attemptAuthentication");
-        System.out.println("******************************");
-        log.info(request.toString());
-        System.out.println("request = " + request);
-        System.out.println("******************************");
 
         try {
             authRequest = getAuthRequest(wrappedRequest);
@@ -50,7 +46,7 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, true);
             UserDto user = objectMapper.readValue(request.getInputStream(), UserDto.class);
-            log.debug("1.CustomAuthenticationFilter :: userId:" + user.getId() + " userPw:" + user.getPassword());
+            log.info("1.CustomAuthenticationFilter :: userId:" + user.getId() + " userPw:" + user.getPassword());
 
             // ID와 암호화된 패스워드를 기반으로 토큰 발급
             return new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword());

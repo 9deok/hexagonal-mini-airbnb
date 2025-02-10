@@ -28,4 +28,10 @@ public class UserQueryDslSupportImpl implements UserQueryDslSupport {
             .fetchOne());
     }
 
+    @Override
+    public UserEntity save(UserEntity userEntity) {
+        entityManager.persist(userEntity);
+        return userEntity;
+    }
+
 }

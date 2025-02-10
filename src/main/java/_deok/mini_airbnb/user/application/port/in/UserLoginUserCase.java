@@ -5,5 +5,5 @@ import _deok.mini_airbnb.user.domain.User;
 import java.util.Optional;
 
 public interface UserLoginUserCase {
-    Optional<User> login(UserDto userDto);
+    User login(UserDto userDto);
 }

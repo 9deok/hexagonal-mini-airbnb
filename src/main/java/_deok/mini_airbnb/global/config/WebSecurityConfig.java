@@ -1,30 +1,56 @@
 package _deok.mini_airbnb.global.config;
 
+import _deok.mini_airbnb.global.auth.filter.CustomAuthenticationFilter;
 import _deok.mini_airbnb.global.auth.filter.JwtAuthorizationFilter;
+import _deok.mini_airbnb.global.auth.handler.CustomAuthFailureHandler;
+import _deok.mini_airbnb.global.auth.handler.CustomAuthSuccessHandler;
+import _deok.mini_airbnb.global.auth.utils.CustomAuthenticationProvider;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+
+@Slf4j
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
 
+    private final CustomAuthSuccessHandler customLoginSuccessHandler;
+    private final CustomAuthFailureHandler customAuthFailureHandler;
+    private final JwtAuthorizationFilter jwtAuthorizationFilter;
+    private final CustomAuthenticationProvider customAuthenticationProvider;
+
+    public WebSecurityConfig(CustomAuthSuccessHandler customLoginSuccessHandler,
+        CustomAuthFailureHandler customAuthFailureHandler,
+        JwtAuthorizationFilter jwtAuthorizationFilter,
+        CustomAuthenticationProvider customAuthenticationProvider) {
+        this.customLoginSuccessHandler = customLoginSuccessHandler;
+        this.customAuthFailureHandler = customAuthFailureHandler;
+        this.jwtAuthorizationFilter = jwtAuthorizationFilter;
+        this.customAuthenticationProvider = customAuthenticationProvider;
+    }
+
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         // 정적 자원에 대해서 Security를 적용하지 않음으로 설정
-        return web -> web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations());
+        return web -> web.ignoring()
+            .requestMatchers(PathRequest.toStaticResources().atCommonLocations());
     }
 
     @Bean
@@ -32,22 +58,18 @@ public class WebSecurityConfig {
         return http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/h2-console/**").permitAll() // H2 콘솔 허용
-                .anyRequest().authenticated()
-            )
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
             .headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.disable()) // X-Frame-Options 헤더 비활성화
+                .frameOptions(FrameOptionsConfig::disable) // X-Frame-Options 헤더 비활성화
             )
+            .addFilterBefore(jwtAuthorizationFilter, BasicAuthenticationFilter.class)
+            .sessionManagement(
+                session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(customAuthenticationFilter(),
+                UsernamePasswordAuthenticationFilter.class)
+            .formLogin(
+                AbstractHttpConfigurer::disable)                                                     // 폼 로그인 비활성화
             .build();
-
-//        http
-//            .authorizeRequests(authorizeRequests ->
-//                authorizeRequests
-//                    .antMatchers("/").permitAll()
-//                    .anyRequest().authenticated()
-//            )
-//            .formLogin(withDefaults());
     }
 
     @Bean
@@ -65,12 +87,22 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter();
+    public CustomAuthenticationFilter customAuthenticationFilter() {
+        CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter(
+            authenticationManager());
+        customAuthenticationFilter.setFilterProcessesUrl("/login");     // 접근 URL
+        customAuthenticationFilter
+            .setAuthenticationSuccessHandler(
+                customLoginSuccessHandler);    // '인증' 성공 시 해당 핸들러로 처리를 전가한다.
+        customAuthenticationFilter
+            .setAuthenticationFailureHandler(
+                customAuthFailureHandler);    // '인증' 실패 시 해당 핸들러로 처리를 전가한다.
+        customAuthenticationFilter.afterPropertiesSet();
+        return customAuthenticationFilter;
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager() {
+        return new ProviderManager(customAuthenticationProvider);
     }
 }

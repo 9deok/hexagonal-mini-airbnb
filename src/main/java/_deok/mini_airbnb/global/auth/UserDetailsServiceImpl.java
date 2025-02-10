@@ -3,6 +3,7 @@ package _deok.mini_airbnb.global.auth;
 import _deok.mini_airbnb.global.auth.utils.UserDetailDto;
 import _deok.mini_airbnb.global.auth.utils.UserDto;
 import _deok.mini_airbnb.user.application.port.in.UserLoginUserCase;
+import _deok.mini_airbnb.user.domain.User;
 import java.util.Collections;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,8 +31,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             .email(username)
             .build();
 
-        return userLoginUserCase.login(userDto)
-            .map(user -> new UserDetailDto(user, Collections.singleton(new SimpleGrantedAuthority(user.getUserName()))))
-            .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+        User loginedUser = userLoginUserCase.login(userDto);
+        return new UserDetailDto(loginedUser,
+            Collections.singleton(new SimpleGrantedAuthority(loginedUser.getUserRole())));
     }
 }

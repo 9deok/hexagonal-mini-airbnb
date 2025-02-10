@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -34,4 +35,15 @@ class UserEntity {
     @Enumerated(EnumType.STRING)
     private UserRole userRole;
 
+    @Builder
+    public UserEntity(Long id, String email, String password, String userName,
+        LocalDateTime createdDate, LocalDateTime modifiedDate, UserRole userRole) {
+        this.id = id;
+        this.email = email;
+        this.password = password;
+        this.userName = userName;
+        this.createdDate = createdDate;
+        this.modifiedDate = modifiedDate;
+        this.userRole = userRole;
+    }
 }

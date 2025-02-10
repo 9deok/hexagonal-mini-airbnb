@@ -6,4 +6,5 @@ public interface UserQueryDslSupport {
 
     Optional<UserEntity> findByName(String name);
 
+    UserEntity save(UserEntity userEntity);
 }
