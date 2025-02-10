@@ -40,19 +40,19 @@ public class TokenValidator {
         } catch (ExpiredJwtException exception) {
             log.error(exception.getLocalizedMessage());
             log.info("token is expired token : {}", token);
-            return TokenValidateDto.builder().isValid(true).errorMessage("TOKEN_EXPIRED").build();
+            return TokenValidateDto.builder().isValid(false).errorMessage("TOKEN_EXPIRED").build();
         } catch (JwtException exception) {
             log.error(exception.getLocalizedMessage());
             log.info("token is invalid token : {}", token);
-            return TokenValidateDto.builder().isValid(true).errorMessage("TOKEN_INVALID").build();
+            return TokenValidateDto.builder().isValid(false).errorMessage("TOKEN_INVALID").build();
         } catch (NullPointerException exception) {
             log.error(exception.getLocalizedMessage());
             log.info("token is null token : {}", token);
-            return TokenValidateDto.builder().isValid(true).errorMessage("TOKEN_NULL").build();
+            return TokenValidateDto.builder().isValid(false).errorMessage("TOKEN_NULL").build();
         } catch (Exception exception) {
             log.error(exception.getLocalizedMessage());
             log.info("unknown token Error : {}", token);
-            return TokenValidateDto.builder().isValid(true).errorMessage("TOKEN_ERROR").build();
+            return TokenValidateDto.builder().isValid(false).errorMessage("TOKEN_ERROR").build();
         }
     }
 }

@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +37,8 @@ public class TokenGenerator {
     }
 
     private Date createExpoireDate() {
-//        LocalDateTime expireDate = LocalDateTime.now().plusHours(1);
-        LocalDateTime expireDate = LocalDateTime.now().plusMinutes(5);
-        Instant instant = expireDate.atZone(ZoneId.systemDefault()).toInstant();
+        LocalDateTime expireDate = LocalDateTime.now().plusMinutes(1);
+        Instant instant = expireDate.atZone(ZoneId.of("Asia/Seoul")).toInstant();
 
         return Date.from(instant);
     }
@@ -62,11 +62,11 @@ public class TokenGenerator {
     }
 
     private Map<String, Object> createClaims(User userDto) {
-        return Map.of(
-            "userId", userDto.getId(),
-            "email", userDto.getEmail(),
-            "userName", userDto.getUserName()
-        );
+        Map<String, Object> claim = new HashMap<>();
+        claim.put("userId", userDto.getId());
+        claim.put("email", userDto.getEmail());
+        claim.put("userName", userDto.getUserName());
+        return claim;
     }
 
     private static Date createrefreshTokenExpireDate() {
