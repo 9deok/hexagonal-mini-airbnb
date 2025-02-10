@@ -37,7 +37,7 @@ public class TokenGenerator {
     }
 
     private Date createExpoireDate() {
-        LocalDateTime expireDate = LocalDateTime.now().plusMinutes(1);
+        LocalDateTime expireDate = LocalDateTime.now().plusMinutes(20);
         Instant instant = expireDate.atZone(ZoneId.of("Asia/Seoul")).toInstant();
 
         return Date.from(instant);

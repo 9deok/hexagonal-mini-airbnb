@@ -27,7 +27,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     private static final String HTTP_METHOD_OPTIONS = "OPTIONS";
-    private static final List<String> PUBLIC_URLS = List.of("/login", "/h2-console","/h2-console/**", "/sign-up");
+    private static final List<String> PUBLIC_URLS =
+        List.of(
+            "/login",
+            "/h2-console","/h2-console/**",
+            "/sign-up",
+            "/redis/values");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final TokenUtils tokenUtils;
     private final TokenValidator tokenValidator;
