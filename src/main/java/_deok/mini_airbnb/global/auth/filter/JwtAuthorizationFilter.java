@@ -112,6 +112,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         responseBody.put("accessToken", accessToken);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         try {
             PrintWriter printWriter = response.getWriter();
             printWriter.write(OBJECT_MAPPER.writeValueAsString(responseBody));
