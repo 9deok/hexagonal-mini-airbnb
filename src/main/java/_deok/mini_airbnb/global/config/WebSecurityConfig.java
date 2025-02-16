@@ -4,7 +4,9 @@ import _deok.mini_airbnb.global.auth.filter.CustomAuthenticationFilter;
 import _deok.mini_airbnb.global.auth.filter.JwtAuthorizationFilter;
 import _deok.mini_airbnb.global.auth.handler.CustomAuthFailureHandler;
 import _deok.mini_airbnb.global.auth.handler.CustomAuthSuccessHandler;
+import _deok.mini_airbnb.global.auth.handler.CustomLogoutHandler;
 import _deok.mini_airbnb.global.auth.utils.CustomAuthenticationProvider;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
@@ -17,6 +19,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
+import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -35,15 +38,18 @@ public class WebSecurityConfig {
     private final CustomAuthFailureHandler customAuthFailureHandler;
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
     private final CustomAuthenticationProvider customAuthenticationProvider;
+    private final CustomLogoutHandler customLogoutHandler;
 
     public WebSecurityConfig(CustomAuthSuccessHandler customLoginSuccessHandler,
         CustomAuthFailureHandler customAuthFailureHandler,
         JwtAuthorizationFilter jwtAuthorizationFilter,
-        CustomAuthenticationProvider customAuthenticationProvider) {
+        CustomAuthenticationProvider customAuthenticationProvider,
+        CustomLogoutHandler customLogoutHandler) {
         this.customLoginSuccessHandler = customLoginSuccessHandler;
         this.customAuthFailureHandler = customAuthFailureHandler;
         this.jwtAuthorizationFilter = jwtAuthorizationFilter;
         this.customAuthenticationProvider = customAuthenticationProvider;
+        this.customLogoutHandler = customLogoutHandler;
     }
 
     @Bean
@@ -67,8 +73,8 @@ public class WebSecurityConfig {
                 session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(customAuthenticationFilter(),
                 UsernamePasswordAuthenticationFilter.class)
-            .formLogin(
-                AbstractHttpConfigurer::disable)                                                     // 폼 로그인 비활성화
+            .formLogin(AbstractHttpConfigurer::disable)
+            .logout(this::configureLogout)
             .build();
     }
 
@@ -105,4 +111,16 @@ public class WebSecurityConfig {
     public AuthenticationManager authenticationManager() {
         return new ProviderManager(customAuthenticationProvider);
     }
+
+    private void configureLogout(LogoutConfigurer<HttpSecurity> logout) {
+        logout
+            // 1. 로그아웃 엔드포인트를 지정합니다.
+            .logoutUrl("/logout")
+            // 2. 엔드포인트 호출에 대한 처리 Handler를 구성합니다.
+            .addLogoutHandler(customLogoutHandler)
+            // 3. 로그아웃 처리가 완료되었을때 처리를 수행합니다.
+            .logoutSuccessHandler((request, response, authentication) -> response.setStatus(
+                HttpServletResponse.SC_OK));
+    }
+
 }

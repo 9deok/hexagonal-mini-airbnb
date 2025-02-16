@@ -1,5 +1,6 @@
 package _deok.mini_airbnb.global.auth.token;
 
+import _deok.mini_airbnb.global.auth.service.TokenBlackListService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class TokenValidator {
 
     private final TokenUtils tokenUtils;
+    private final TokenBlackListService tokenBlackListService;
 
     public TokenValidateDto isValidToken(String token) {
         if (token == null || token.isBlank()) {
@@ -22,6 +24,14 @@ public class TokenValidator {
                 .errorMessage("TOKEN_NULL")
                 .build();
         }
+
+        if(tokenBlackListService.isTokenBlacklisted(token)) {
+            log.error("[경고!] 로그 아웃 된 토큰으로 접근 시도!!");
+            return TokenValidateDto.builder()
+                .isValid(false)
+                .errorMessage("LOGOUT_TOKEN")
+                .build();
+        };
 
         try {
             Long userId = tokenUtils.getUserIdOfToken(token);

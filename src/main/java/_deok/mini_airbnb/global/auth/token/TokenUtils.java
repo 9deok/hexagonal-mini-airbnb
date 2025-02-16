@@ -24,8 +24,8 @@ public class TokenUtils {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     public TokenUtils(@Value("${jwt.secret.key}") String jwtSecretKey) {
-        TokenUtils.JWT_SECRET_KEY = Keys.hmacShaKeyFor(
-            jwtSecretKey.getBytes(StandardCharsets.UTF_8));
+        TokenUtils.JWT_SECRET_KEY
+            = Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     public String getTokenOfHeader(String header) {
