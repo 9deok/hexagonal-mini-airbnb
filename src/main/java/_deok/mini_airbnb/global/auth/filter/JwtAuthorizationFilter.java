@@ -30,9 +30,11 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private static final List<String> PUBLIC_URLS =
         List.of(
             "/login",
-            "/h2-console","/h2-console/**",
+            "/h2-console", "/h2-console/**",
             "/sign-up",
-            "/redis/values");
+            "/redis/values",
+            "/oauth2/authorization/google",
+            "login/oauth2/code/google");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final TokenUtils tokenUtils;
     private final TokenValidator tokenValidator;
@@ -55,23 +57,26 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         }
 
         try {
-            String accessToken = tokenUtils.extractToken(request,"Authorization");
-            String refreshToken = tokenUtils.extractToken(request,"x-refresh-token");
+            String accessToken = tokenUtils.extractToken(request, "Authorization");
+            String refreshToken = tokenUtils.extractToken(request, "x-refresh-token");
             TokenValidateDto accessTokenValidateDto = tokenValidator.isValidToken(accessToken);
-            if(accessTokenValidateDto.isValid()) {
+            if (accessTokenValidateDto.isValid()) {
                 Long userId = tokenUtils.getUserIdOfToken(accessToken);
-                Authentication auth = new UsernamePasswordAuthenticationToken(userId, null, List.of());
+                Authentication auth = new UsernamePasswordAuthenticationToken(userId, null,
+                    List.of());
                 SecurityContextHolder.getContext().setAuthentication(auth);
                 filterChain.doFilter(request, response);
             } else {
-                if(accessTokenValidateDto.getErrorMessage().equals("TOKEN_EXPIRED")) {
-                    TokenValidateDto refreshTokenValidateDto = tokenValidator.isValidToken(refreshToken);
-                    if(refreshTokenValidateDto.isValid()) {
+                if (accessTokenValidateDto.getErrorMessage().equals("TOKEN_EXPIRED")) {
+                    TokenValidateDto refreshTokenValidateDto = tokenValidator.isValidToken(
+                        refreshToken);
+                    if (refreshTokenValidateDto.isValid()) {
                         User user = tokenUtils.getUserOfToken(refreshToken, false);
                         String newAccessToken = tokenGenerator.generateToken(user);
                         sendAccessTokenToClient(newAccessToken, response);
                         Long userId = tokenUtils.getUserIdOfToken(refreshToken);
-                        Authentication auth = new UsernamePasswordAuthenticationToken(userId, null, List.of());
+                        Authentication auth = new UsernamePasswordAuthenticationToken(userId, null,
+                            List.of());
                         SecurityContextHolder.getContext().setAuthentication(auth);
                         filterChain.doFilter(request, response);
                     } else {

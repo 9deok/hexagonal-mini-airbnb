@@ -4,6 +4,7 @@ import _deok.mini_airbnb.global.auth.filter.CustomAuthenticationFilter;
 import _deok.mini_airbnb.global.auth.filter.JwtAuthorizationFilter;
 import _deok.mini_airbnb.global.auth.handler.CustomAuthFailureHandler;
 import _deok.mini_airbnb.global.auth.handler.CustomAuthSuccessHandler;
+import _deok.mini_airbnb.global.auth.handler.CustomGoogleLoginSuccessHandler;
 import _deok.mini_airbnb.global.auth.handler.CustomLogoutHandler;
 import _deok.mini_airbnb.global.auth.utils.CustomAuthenticationProvider;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,17 +40,20 @@ public class WebSecurityConfig {
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
     private final CustomAuthenticationProvider customAuthenticationProvider;
     private final CustomLogoutHandler customLogoutHandler;
+    private final CustomGoogleLoginSuccessHandler customGoogleLoginSuccessHandler;
 
     public WebSecurityConfig(CustomAuthSuccessHandler customLoginSuccessHandler,
         CustomAuthFailureHandler customAuthFailureHandler,
         JwtAuthorizationFilter jwtAuthorizationFilter,
         CustomAuthenticationProvider customAuthenticationProvider,
-        CustomLogoutHandler customLogoutHandler) {
+        CustomLogoutHandler customLogoutHandler,
+        CustomGoogleLoginSuccessHandler customGoogleLoginSuccessHandler) {
         this.customLoginSuccessHandler = customLoginSuccessHandler;
         this.customAuthFailureHandler = customAuthFailureHandler;
         this.jwtAuthorizationFilter = jwtAuthorizationFilter;
         this.customAuthenticationProvider = customAuthenticationProvider;
         this.customLogoutHandler = customLogoutHandler;
+        this.customGoogleLoginSuccessHandler = customGoogleLoginSuccessHandler;
     }
 
     @Bean
@@ -75,6 +79,9 @@ public class WebSecurityConfig {
                 UsernamePasswordAuthenticationFilter.class)
             .formLogin(AbstractHttpConfigurer::disable)
             .logout(this::configureLogout)
+            .oauth2Login(oauth2 ->
+                oauth2.successHandler(customGoogleLoginSuccessHandler)
+            )
             .build();
     }
 
