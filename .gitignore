@@ -2,6 +2,8 @@ HELP.md
 .gradle
 src/main/generated
 build/
+/build/
+/out/
 docker/
 tempo-data/
 logs/
